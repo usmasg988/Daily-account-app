@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ur" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transaction Entry</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Poppins', sans-serif; background: #0f172a; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .card { background: #1e293b; border-radius: 20px; padding: 24px; width: 100%; max-width: 420px; box-shadow: 0 25px 50px rgba(0,0,0,0.5); border: 1px solid #334155; }
+  .header { text-align: center; margin-bottom: 24px; }
+  .header h1 { color: #f1f5f9; font-size: 22px; font-weight: 700; }
+  .header p { color: #64748b; font-size: 13px; margin-top: 4px; }
+  .logo { width: 48px; height: 48px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; font-size: 22px; }
+  label { display: block; color: #94a3b8; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .field { margin-bottom: 16px; }
+  input { width: 100%; background: #0f172a; border: 1px solid #334155; border-radius: 10px; color: #f1f5f9; font-family: 'Poppins', sans-serif; font-size: 14px; padding: 12px 14px; outline: none; transition: border-color 0.2s; }
+  input:focus { border-color: #3b82f6; }
+  .accounts-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .acc-btn { background: #0f172a; border: 2px solid #334155; border-radius: 10px; color: #94a3b8; font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 600; padding: 10px 8px; cursor: pointer; transition: all 0.2s; text-align: center; }
+  .acc-btn:hover { border-color: #3b82f6; color: #3b82f6; }
+  .acc-btn.selected { background: #1d4ed8; border-color: #3b82f6; color: #fff; }
+  .divider { border: none; border-top: 1px solid #334155; margin: 16px 0; }
+  .optional-label { color: #475569; font-size: 11px; font-weight: 400; text-transform: none; letter-spacing: 0; }
+  .submit-btn { width: 100%; background: linear-gradient(135deg, #3b82f6, #8b5cf6); border: none; border-radius: 12px; color: #fff; font-family: 'Poppins', sans-serif; font-size: 16px; font-weight: 700; padding: 14px; cursor: pointer; transition: opacity 0.2s, transform 0.1s; margin-top: 8px; }
+  .submit-btn:hover { opacity: 0.9; }
+  .submit-btn:active { transform: scale(0.98); }
+  .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-80px); color: #fff; font-family: 'Poppins', sans-serif; font-weight: 600; font-size: 14px; padding: 12px 24px; border-radius: 50px; transition: transform 0.3s ease; z-index: 999; white-space: nowrap; background: #22c55e; }
+  .toast.error { background: #ef4444; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .hint { color: #475569; font-size: 11px; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="header">
+    <div class="logo">💳</div>
+    <h1>Transaction Entry</h1>
+    <p>Seedha Google Sheet mein</p>
+  </div>
+  <div class="field">
+    <label>📝 Description <span class="optional-label">(optional)</span></label>
+    <input type="text" id="description" placeholder="Jaise: rent, salary, grocery..." />
+  </div>
+  <div class="field">
+    <label>🏦 Account Select Karein</label>
+    <div class="accounts-grid">
+      <button class="acc-btn" onclick="selectAccount(this, 'B')">Udhar</button>
+      <button class="acc-btn" onclick="selectAccount(this, 'C')">Easypaisa</button>
+      <button class="acc-btn" onclick="selectAccount(this, 'D')">JazzCash</button>
+      <button class="acc-btn" onclick="selectAccount(this, 'E')">HBL</button>
+      <button class="acc-btn" onclick="selectAccount(this, 'F')">UBL</button>
+      <button class="acc-btn" onclick="selectAccount(this, 'G')">E-Sahulat</button>
+      <button class="acc-btn" onclick="selectAccount(this, 'H')">CBA</button>
+      <button class="acc-btn" onclick="selectAccount(this, 'I')">HBL 2</button>
+    </div>
+  </div>
+  <div class="field">
+    <label>💰 Amount</label>
+    <input type="number" id="amount" placeholder="IN: 500 | OUT: -500" />
+    <p class="hint">OUT ke liye minus sign lagayein: -500</p>
+  </div>
+  <hr class="divider">
+  <div class="field">
+    <label>💵 Cash OUT/IN <span class="optional-label">(optional)</span></label>
+    <input type="number" id="cashAmount" placeholder="0" />
+  </div>
+  <div class="field">
+    <label>💸 Fee <span class="optional-label">(optional)</span></label>
+    <input type="number" id="feeAmount" placeholder="0" />
+  </div>
+  <button class="submit-btn" onclick="submitEntry()" id="submitBtn">✅ Sheet Mein Save Karein</button>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+  const SHEET_ID = '18l3wCCNi_2uoiDSPhFv42e4bSr6ABy9qhOFcLDDYsco';
+  const SHEET_NAME = 'FACE SHEET (2)';
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxWEFAS_e8P0gKcqC-sSbPkI6k-1bt6TwFA7zyLmbyopu6AjgSSdiOFf4d5B_fGCU3L/exec';
+  let selectedCol = null;
+
+  function selectAccount(btn, col) {
+    document.querySelectorAll('.acc-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedCol = col;
+  }
+
+  function showToast(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast' + (isError ? ' error' : '') + ' show';
+    setTimeout(() => { t.className = 'toast' + (isError ? ' error' : ''); }, 3000);
+  }
+
+  async function submitEntry() {
+    const description = document.getElementById('description').value.trim();
+    const amount = document.getElementById('amount').value.trim();
+    const cashAmount = document.getElementById('cashAmount').value.trim();
+    const feeAmount = document.getElementById('feeAmount').value.trim();
+
+    if (!selectedCol) return showToast('Account select karein!', true);
+    if (!amount) return showToast('Amount daalen!', true);
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Save ho raha hai...';
+
+    try {
+      const params = new URLSearchParams({
+        sheetId: SHEET_ID,
+        sheetName: SHEET_NAME,
+        description: description,
+        accountCol: selectedCol,
+        amount: Number(amount),
+        cashAmount: cashAmount !== '' ? Number(cashAmount) : '',
+        feeAmount: feeAmount !== '' ? Number(feeAmount) : ''
+      });
+
+      await fetch(SCRIPT_URL + '?' + params.toString(), {
+        method: 'GET',
+        mode: 'no-cors'
+      });
+
+      showToast('✅ Entry save ho gayi!');
+      clearForm();
+    } catch (err) {
+      showToast('❌ Error! Internet check karein', true);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '✅ Sheet Mein Save Karein';
+    }
+  }
+
+  function clearForm() {
+    document.getElementById('description').value = '';
+    document.getElementById('amount').value = '';
+    document.getElementById('cashAmount').value = '';
+    document.getElementById('feeAmount').value = '';
+    document.querySelectorAll('.acc-btn').forEach(b => b.classList.remove('selected'));
+    selectedCol = null;
+  }
+</script>
+</body>
+</html>
